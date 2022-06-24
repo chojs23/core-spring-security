@@ -5,6 +5,7 @@ import io.security.corespringsecurity.security.provider.CustomAuthenticationProv
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -23,13 +24,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Order(1)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final UserDetailsService userDetailsService;
 
     private final AuthenticationDetailsSource authenticationDetailsSource;
-    private final AuthenticationSuccessHandler authenticationSuccessHandler;
-    private final AuthenticationFailureHandler authenticationFailureHandler;
+    private final AuthenticationSuccessHandler customAuthenticationSuccessHandler;
+    private final AuthenticationFailureHandler customAuthenticationFailureHandler;
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.authenticationProvider(authenticationProvider());
@@ -50,12 +52,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return super.authenticationManagerBean();
     }
 
-    @Bean
-    public AjaxLoginProcessingFilter ajaxLoginProcessingFilter() throws Exception {
-        AjaxLoginProcessingFilter ajaxLoginProcessingFilter = new AjaxLoginProcessingFilter();
-        ajaxLoginProcessingFilter.setAuthenticationManager(authenticationManagerBean());
-        return ajaxLoginProcessingFilter;
-    }
+
 
     @Override
     public void configure(WebSecurity web) throws Exception {
@@ -70,22 +67,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/mypage").hasRole("USER")
                 .antMatchers("/messages").hasRole("MANAGER")
                 .antMatchers("/config").hasRole("ADMIN")
+                .antMatchers("/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
                 .loginPage("/login")
                 .loginProcessingUrl("/login_proc")
                 .authenticationDetailsSource(authenticationDetailsSource)
-                .successHandler(authenticationSuccessHandler)
-                .failureHandler(authenticationFailureHandler)
+                .successHandler(customAuthenticationSuccessHandler)
+                .failureHandler(customAuthenticationFailureHandler)
                 .defaultSuccessUrl("/")
                 .permitAll()
         ;
 
-        http
-                .addFilterBefore(ajaxLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class);
 
-        http.csrf().disable();
 
     }
 }
